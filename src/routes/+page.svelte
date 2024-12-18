@@ -112,7 +112,7 @@
                     href="/register" 
                     class="new-account-link text-[#d4a373] font-bold text-sm hover:text-[#c49363] transition-colors"
                 >
-                    Create a new 
+                    Create a new account
                 </a>
             </div>
         </div>
