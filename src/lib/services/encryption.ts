@@ -1,93 +1,76 @@
 import CryptoJS from 'crypto-js';
-import { PUBLIC_ENCRYPTION_KEY } from '$env/static/public';
 
 export class EncryptionService {
-    private key: string | null = null;
+    private key: CryptoJS.lib.WordArray;
 
     constructor() {
-        this.key = PUBLIC_ENCRYPTION_KEY;
-    }
-
-    async encrypt(data: unknown): Promise<string> {
-        if (!this.key) {
-            throw new Error('Encryption key not available');
+        const envKey = import.meta.env.VITE_PUBLIC_ENCRYPTION_KEY || '';
+        if (!envKey) {
+            throw new Error('Encryption key is not available.');
         }
 
+        // Convert hex key to bytes
+        this.key = CryptoJS.enc.Hex.parse(envKey);
+    }
+
+    // Encrypt function
+    encrypt(data: Record<string, unknown>): string {
         try {
-            // Convert hex key to bytes
-            const keyBytes = CryptoJS.enc.Hex.parse(this.key);
+            console.log('Original data to encrypt:', data);  // Log original data
             
-            // Generate random IV
             const iv = CryptoJS.lib.WordArray.random(16);
-            
-            // Convert data to string
             const jsonStr = JSON.stringify(data);
 
-            // Encrypt
-            const encrypted = CryptoJS.AES.encrypt(jsonStr, keyBytes, {
+            const encrypted = CryptoJS.AES.encrypt(jsonStr, this.key, {
                 iv: iv,
                 mode: CryptoJS.mode.CBC,
-                padding: CryptoJS.pad.Pkcs7
+                padding: CryptoJS.pad.Pkcs7,
             });
 
-            // Combine IV and ciphertext
             const combined = iv.concat(encrypted.ciphertext);
+            const encryptedData = CryptoJS.enc.Base64.stringify(combined);
+
+            console.log('Encrypted data:', encryptedData);  // Log encrypted data
             
-            // Convert to base64
-            return CryptoJS.enc.Base64.stringify(combined);
+            return encryptedData;
         } catch (error) {
             console.error('Encryption error:', error);
-            throw error;
+            throw new Error('Failed to encrypt data.');
         }
     }
 
-    async decrypt(encryptedData: string): Promise<unknown> {
-        if (!this.key) {
-            throw new Error('Encryption key not available');
-        }
-
+    // Decrypt function
+    decrypt(encryptedData: string): Record<string, unknown> {
         try {
-            // Convert hex key to bytes
-            const keyBytes = CryptoJS.enc.Hex.parse(this.key);
-            
-            // Decode base64
+            console.log( encryptedData);  // Log encrypted data
+
             const combined = CryptoJS.enc.Base64.parse(encryptedData);
-            
-            // Split IV and ciphertext
+
             const iv = CryptoJS.lib.WordArray.create(combined.words.slice(0, 4));
             const ciphertext = CryptoJS.lib.WordArray.create(
                 combined.words.slice(4),
                 combined.sigBytes - 16
             );
 
-            // Create cipher params
-            const cipherParams = CryptoJS.lib.CipherParams.create({
-                ciphertext: ciphertext
-            });
-
-            // Decrypt
             const decrypted = CryptoJS.AES.decrypt(
-                cipherParams,
-                keyBytes,
+                { ciphertext: ciphertext },
+                this.key,
                 {
                     iv: iv,
                     mode: CryptoJS.mode.CBC,
-                    padding: CryptoJS.pad.Pkcs7
+                    padding: CryptoJS.pad.Pkcs7,
                 }
             );
 
-            // Convert to string and parse JSON
             const decryptedStr = decrypted.toString(CryptoJS.enc.Utf8);
-            if (!decryptedStr) {
-                throw new Error('Decryption produced empty result');
-            }
 
+            // Removed decrypted data from logs
             return JSON.parse(decryptedStr);
         } catch (error) {
             console.error('Decryption error:', error);
-            throw error;
+            throw new Error('Failed to decrypt data.');
         }
     }
 }
 
-export const encryptionService = new EncryptionService(); 
+export const encryptionService = new EncryptionService();
