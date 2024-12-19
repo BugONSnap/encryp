@@ -3,7 +3,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 
 const API_URL = 'https://formalytics.me/api-cafe';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
 	plugins: [sveltekit()],
 	server: {
 		fs: {
@@ -18,9 +18,13 @@ export default defineConfig({
 			'/uploads': {
 				target: 'https://formalytics.me/uploads',
 				changeOrigin: true,
-					rewrite: (path) => path.replace(/^\/uploads/, '')
+				rewrite: (path) => path.replace(/^\/uploads/, '')
 			}
 		}
+	},
+	build: {
+		// Disable source maps in production
+		sourcemap: mode === 'development',
 	},
 	test: {
 		include: ['src/**/*.{test,spec}.{js,ts}']
@@ -28,4 +32,4 @@ export default defineConfig({
 	define: {
 		'import.meta.env.VITE_API_URL': JSON.stringify(API_URL)
 	}
-});
+}));

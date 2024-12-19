@@ -30,7 +30,6 @@ export class EncryptionService {
             const combined = iv.concat(encrypted.ciphertext);
             const encryptedData = CryptoJS.enc.Base64.stringify(combined);
 
-            console.log('Encrypted data:', encryptedData);  // Log encrypted data
             
             return encryptedData;
         } catch (error) {
